@@ -1,0 +1,17 @@
+---
+description: Require PRDs for new features and review PRD first
+alwaysApply: true
+---
+
+# PRD-First Feature Workflow
+
+When a request involves a new feature, follow this workflow:
+
+1. Create a new PRD before implementation.
+2. Store the PRD in `plans/`.
+3. Use a clear feature-specific filename like `plans/<feature-name>-prd.md`.
+4. Review the relevant PRD content before taking implementation actions.
+5. Create a feature branch using format `feature/FEATURE-NAME` before implementation work.
+6. If no PRD exists for a feature request, create one first and confirm scope from it before coding.
+
+For non-feature requests (bug fixes, small refactors, docs-only updates), this rule does not require creating a PRD unless the user asks for one.

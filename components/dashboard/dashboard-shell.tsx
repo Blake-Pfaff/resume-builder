@@ -39,6 +39,9 @@ export const DashboardShell = ({ initialResumes }: { initialResumes: ResumeRow[]
   const [title, setTitle] = useState("Software Engineer");
   const [template, setTemplate] = useState("classic");
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
   const router = useRouter();
 
   const refreshResumes = async () => {
@@ -101,6 +104,44 @@ export const DashboardShell = ({ initialResumes }: { initialResumes: ResumeRow[]
     router.refresh();
   };
 
+  const onImportResume = async () => {
+    if (!importFile) {
+      toast.error("Choose a PDF file to import.");
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", importFile);
+
+      const response = await fetch("/api/resumes/import", {
+        method: "POST",
+        body: formData,
+      });
+      const raw = await response.text();
+      const data = raw ? (JSON.parse(raw) as { id?: string; warnings?: string[]; error?: string }) : {};
+      if (!response.ok || !data.id) {
+        toast.error(data.error ?? "Unable to import resume.");
+        return;
+      }
+
+      if (Array.isArray(data.warnings) && data.warnings.length > 0) {
+        toast.warning(data.warnings.join(" "));
+      } else {
+        toast.success("Resume imported.");
+      }
+
+      setImportFile(null);
+      setImportOpen(false);
+      router.push(`/editor/${data.id}`);
+    } catch {
+      toast.error("Import failed due to an unexpected server response.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -134,6 +175,40 @@ export const DashboardShell = ({ initialResumes }: { initialResumes: ResumeRow[]
                   Cancel
                 </Button>
                 <Button onClick={onCreate}>Create</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog
+            open={importOpen}
+            onOpenChange={(next) => {
+              setImportOpen(next);
+              if (!next) setImportFile(null);
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button variant="outline">Import Resume</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Import resume PDF</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <Input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
+                />
+                <p className="text-xs text-zinc-500">
+                  Upload a PDF resume. We will extract the text and create an editable draft.
+                </p>
+              </div>
+              <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => setImportOpen(false)} disabled={importing}>
+                  Cancel
+                </Button>
+                <Button onClick={onImportResume} disabled={!importFile || importing}>
+                  {importing ? "Importing..." : "Import"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
