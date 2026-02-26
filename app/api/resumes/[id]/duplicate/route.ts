@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getRouteUser } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { parseResumeContent } from "@/lib/resume";
 
 type Params = { params: { id: string } };
 
@@ -22,7 +23,7 @@ export async function POST(_: Request, { params }: Params) {
       userId: existing.userId,
       title: `${existing.title} (Copy)`,
       template: existing.template,
-      content: existing.content,
+      content: parseResumeContent(existing.content),
     },
   });
 

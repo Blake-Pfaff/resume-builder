@@ -48,7 +48,7 @@ export async function PATCH(request: Request, { params }: Params) {
     data: {
       title: payload.title ?? existing.title,
       template: payload.template ?? existing.template,
-      content: payload.content ? parseResumeContent(payload.content) : existing.content,
+      content: payload.content ? parseResumeContent(payload.content) : parseResumeContent(existing.content),
     },
   });
 

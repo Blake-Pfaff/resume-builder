@@ -31,8 +31,9 @@ export async function GET(_: Request, { params }: Params) {
     }),
   );
   const fileName = `${toFileName(resume.title)}-${format(new Date(), "yyyy-MM-dd")}.pdf`;
+  const pdfBytes = new Uint8Array(pdfBuffer);
 
-  return new NextResponse(pdfBuffer, {
+  return new NextResponse(pdfBytes, {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
