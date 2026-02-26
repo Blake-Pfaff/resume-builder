@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -13,13 +13,31 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
 
+  const getAuthValues = () => {
+    const form = formRef.current;
+    const emailFromForm = (form?.elements.namedItem("email") as HTMLInputElement | null)?.value ?? "";
+    const passwordFromForm = (form?.elements.namedItem("password") as HTMLInputElement | null)?.value ?? "";
+    return {
+      emailValue: emailFromForm.trim() || email.trim(),
+      passwordValue: passwordFromForm || password,
+    };
+  };
+
   const onPasswordLogin = async () => {
+    const { emailValue, passwordValue } = getAuthValues();
+
+    if (!emailValue || !passwordValue) {
+      toast.error("Enter both email and password.");
+      return;
+    }
+
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: emailValue, password: passwordValue });
       if (error) throw error;
       router.push("/dashboard");
       router.refresh();
@@ -31,11 +49,17 @@ export default function LoginPage() {
   };
 
   const onMagicLink = async () => {
+    const { emailValue } = getAuthValues();
+    if (!emailValue) {
+      toast.error("Enter an email address.");
+      return;
+    }
+
     setLoading(true);
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOtp({
-        email,
+        email: emailValue,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`,
         },
@@ -56,17 +80,40 @@ export default function LoginPage() {
           <CardTitle>Resume Generator</CardTitle>
           <CardDescription>Sign in with email/password or use a magic link.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <div className="flex gap-2">
-            <Button disabled={loading || !email || !password} onClick={onPasswordLogin}>
+        <CardContent>
+          <form
+            ref={formRef}
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void onPasswordLogin();
+            }}
+          >
+            <Input
+              type="email"
+              name="email"
+              autoComplete="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Input
+              type="password"
+              name="password"
+              autoComplete="current-password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button type="submit" disabled={loading}>
               Login
-            </Button>
-            <Button variant="outline" disabled={loading || !email} onClick={onMagicLink}>
+              </Button>
+              <Button type="button" variant="outline" disabled={loading} onClick={() => void onMagicLink()}>
               Send Magic Link
-            </Button>
-          </div>
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </main>

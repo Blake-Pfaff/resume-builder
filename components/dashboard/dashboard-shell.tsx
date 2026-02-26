@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -25,7 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FadeIn, StaggerList } from "@/components/ui/motion";
 import { createClient } from "@/lib/supabase/client";
+import { fadeInUp } from "@/lib/motion";
 
 type ResumeRow = {
   id: string;
@@ -143,108 +146,112 @@ export const DashboardShell = ({ initialResumes }: { initialResumes: ResumeRow[]
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-zinc-600">Manage all resume variants in one place.</p>
-        </div>
-        <div className="flex gap-2">
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button>New Resume</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create new resume</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3">
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Resume title" />
-                <Select value={template} onValueChange={setTemplate}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="classic">Classic</SelectItem>
-                    <SelectItem value="modern">Modern</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => setOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={onCreate}>Create</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Dialog
-            open={importOpen}
-            onOpenChange={(next) => {
-              setImportOpen(next);
-              if (!next) setImportFile(null);
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline">Import Resume</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Import resume PDF</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3">
-                <Input
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
-                />
-                <p className="text-xs text-zinc-500">
-                  Upload a PDF resume. We will extract the text and create an editable draft.
-                </p>
-              </div>
-              <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => setImportOpen(false)} disabled={importing}>
-                  Cancel
-                </Button>
-                <Button onClick={onImportResume} disabled={!importFile || importing}>
-                  {importing ? "Importing..." : "Import"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Button variant="outline" onClick={onSignOut}>
-            Sign out
-          </Button>
-        </div>
-      </header>
+    <div className="mx-auto max-w-6xl space-y-8 p-6 md:p-8">
+      <FadeIn>
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
+            <p className="mt-1 text-sm text-zinc-600">Manage all resume variants in one place.</p>
+          </div>
+          <div className="flex gap-2">
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button>New Resume</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create new resume</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Resume title" />
+                  <Select value={template} onValueChange={setTemplate}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="classic">Classic</SelectItem>
+                      <SelectItem value="modern">Modern</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter className="mt-4">
+                  <Button variant="outline" onClick={() => setOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={onCreate}>Create</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog
+              open={importOpen}
+              onOpenChange={(next) => {
+                setImportOpen(next);
+                if (!next) setImportFile(null);
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button variant="outline">Import Resume</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Import resume PDF</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <Input
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
+                  />
+                  <p className="text-xs text-zinc-500">
+                    Upload a PDF resume. We will extract the text and create an editable draft.
+                  </p>
+                </div>
+                <DialogFooter className="mt-4">
+                  <Button variant="outline" onClick={() => setImportOpen(false)} disabled={importing}>
+                    Cancel
+                  </Button>
+                  <Button onClick={onImportResume} disabled={!importFile || importing}>
+                    {importing ? "Importing..." : "Import"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" onClick={onSignOut}>
+              Sign out
+            </Button>
+          </div>
+        </header>
+      </FadeIn>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <StaggerList className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {resumes.map((resume) => (
-          <Card key={resume.id}>
-            <CardHeader className="space-y-2">
-              <CardTitle className="line-clamp-1">{resume.title}</CardTitle>
-              <CardDescription>
-                Updated {formatDistanceToNow(new Date(resume.updatedAt), { addSuffix: true })}
-              </CardDescription>
-              <Badge variant="secondary">{resume.template}</Badge>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              <Button size="sm" asChild>
-                <Link href={`/editor/${resume.id}`}>Edit</Link>
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => onDuplicate(resume.id)}>
-                Duplicate
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => onExport(resume.id)}>
-                Export PDF
-              </Button>
-              <Button size="sm" variant="danger" onClick={() => onDelete(resume.id)}>
-                Delete
-              </Button>
-            </CardContent>
-          </Card>
+          <motion.div key={resume.id} variants={fadeInUp} whileHover={{ y: -2 }} transition={{ duration: 0.16 }}>
+            <Card className="border-zinc-200/90 shadow-sm transition-shadow duration-200 hover:shadow-lg">
+              <CardHeader className="space-y-2">
+                <CardTitle className="line-clamp-1">{resume.title}</CardTitle>
+                <CardDescription>
+                  Updated {formatDistanceToNow(new Date(resume.updatedAt), { addSuffix: true })}
+                </CardDescription>
+                <Badge variant="secondary">{resume.template}</Badge>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                <Button size="sm" asChild>
+                  <Link href={`/editor/${resume.id}`}>Edit</Link>
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => onDuplicate(resume.id)}>
+                  Duplicate
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => onExport(resume.id)}>
+                  Export PDF
+                </Button>
+                <Button size="sm" variant="danger" onClick={() => onDelete(resume.id)}>
+                  Delete
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
         ))}
-      </section>
+      </StaggerList>
     </div>
   );
 };

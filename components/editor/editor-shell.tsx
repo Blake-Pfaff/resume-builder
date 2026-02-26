@@ -15,6 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { motion } from "framer-motion";
 import debounce from "lodash.debounce";
 import { GripVertical } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
@@ -24,6 +25,7 @@ import { toast } from "sonner";
 import { ResumePreview } from "@/components/preview/resume-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FadeIn, StaggerList } from "@/components/ui/motion";
 import {
   Select,
   SelectContent,
@@ -40,6 +42,7 @@ import {
   type ResumeTemplate,
   type SectionKey,
 } from "@/lib/resume";
+import { fadeInUp } from "@/lib/motion";
 
 type ResumeApiShape = {
   id: string;
@@ -67,7 +70,7 @@ const SortableRow = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="rounded-md border border-zinc-200 bg-white p-4"
+      className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
     >
       <div className="mb-2 flex items-center gap-2 text-xs text-zinc-500">
         <button className="cursor-grab" {...attributes} {...listeners}>
@@ -172,8 +175,9 @@ export const EditorShell = ({ resume }: { resume: ResumeApiShape }) => {
   };
 
   return (
-    <main className="flex min-h-screen min-w-[1100px] flex-col">
-      <header className="flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4">
+    <FadeIn>
+      <main className="flex min-h-screen min-w-[1100px] flex-col bg-zinc-50">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-200/80 bg-white/90 px-6 py-4 backdrop-blur">
         <div className="flex items-center gap-3">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} className="w-[340px]" />
           <Select value={template} onValueChange={(value) => setTemplate(value as ResumeTemplate)}>
@@ -187,66 +191,75 @@ export const EditorShell = ({ resume }: { resume: ResumeApiShape }) => {
           </Select>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-zinc-500">{pendingSave ? "Saving..." : "All changes saved"}</span>
+          <motion.span
+            key={pendingSave ? "saving" : "saved"}
+            initial={{ opacity: 0.5, y: 2 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.16 }}
+            className="text-sm text-zinc-500"
+          >
+            {pendingSave ? "Saving..." : "All changes saved"}
+          </motion.span>
           <Button variant="outline" onClick={exportPdf}>
             Export PDF
           </Button>
         </div>
       </header>
 
-      <section className="grid flex-1 grid-cols-[1fr_1.1fr] bg-zinc-100">
-        <div className="overflow-y-auto border-r border-zinc-200 p-6">
+      <section className="grid flex-1 grid-cols-[1fr_1.1fr] bg-zinc-100/70">
+        <div className="overflow-y-auto border-r border-zinc-200 bg-zinc-50 p-6">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onSectionDragEnd}>
             <SortableContext items={content.sectionOrder} strategy={verticalListSortingStrategy}>
-              <div className="space-y-4">
+              <StaggerList className="space-y-4">
                 {content.sectionOrder.map((sectionKey) => (
-                  <SortableRow key={sectionKey} id={sectionKey}>
-                    <div className="mb-3 flex items-center justify-between">
-                      <h2 className="text-sm font-semibold capitalize">{sectionKey}</h2>
-                      <Switch
-                        checked={content.sections[sectionKey]}
-                        onCheckedChange={(checked) =>
-                          setContent((prev) => ({
-                            ...prev,
-                            sections: { ...prev.sections, [sectionKey]: checked },
-                          }))
-                        }
-                      />
-                    </div>
-                    {sectionKey === "header" ? (
-                      <div className="grid gap-2">
-                        <Input
-                          value={content.header.fullName}
-                          onChange={(e) =>
+                  <motion.div key={sectionKey} variants={fadeInUp}>
+                    <SortableRow id={sectionKey}>
+                      <div className="mb-3 flex items-center justify-between">
+                        <h2 className="text-sm font-semibold capitalize">{sectionKey}</h2>
+                        <Switch
+                          checked={content.sections[sectionKey]}
+                          onCheckedChange={(checked) =>
                             setContent((prev) => ({
                               ...prev,
-                              header: { ...prev.header, fullName: e.target.value },
+                              sections: { ...prev.sections, [sectionKey]: checked },
                             }))
                           }
-                          placeholder="Full name"
-                        />
-                        <Input
-                          value={content.header.jobTitle}
-                          onChange={(e) =>
-                            setContent((prev) => ({
-                              ...prev,
-                              header: { ...prev.header, jobTitle: e.target.value },
-                            }))
-                          }
-                          placeholder="Job title"
-                        />
-                        <Input
-                          value={content.header.email}
-                          onChange={(e) =>
-                            setContent((prev) => ({
-                              ...prev,
-                              header: { ...prev.header, email: e.target.value },
-                            }))
-                          }
-                          placeholder="Email"
                         />
                       </div>
-                    ) : null}
+                      {sectionKey === "header" ? (
+                        <div className="grid gap-2">
+                          <Input
+                            value={content.header.fullName}
+                            onChange={(e) =>
+                              setContent((prev) => ({
+                                ...prev,
+                                header: { ...prev.header, fullName: e.target.value },
+                              }))
+                            }
+                            placeholder="Full name"
+                          />
+                          <Input
+                            value={content.header.jobTitle}
+                            onChange={(e) =>
+                              setContent((prev) => ({
+                                ...prev,
+                                header: { ...prev.header, jobTitle: e.target.value },
+                              }))
+                            }
+                            placeholder="Job title"
+                          />
+                          <Input
+                            value={content.header.email}
+                            onChange={(e) =>
+                              setContent((prev) => ({
+                                ...prev,
+                                header: { ...prev.header, email: e.target.value },
+                              }))
+                            }
+                            placeholder="Email"
+                          />
+                        </div>
+                      ) : null}
                     {sectionKey === "summary" ? (
                       <Textarea
                         value={content.summary}
@@ -468,19 +481,21 @@ export const EditorShell = ({ resume }: { resume: ResumeApiShape }) => {
                         ))}
                       </div>
                     ) : null}
-                  </SortableRow>
+                    </SortableRow>
+                  </motion.div>
                 ))}
-              </div>
+              </StaggerList>
             </SortableContext>
           </DndContext>
         </div>
         <div className="overflow-auto p-6">
-          <div className="mx-auto max-w-[860px]">
+          <div className="mx-auto max-w-[860px] rounded-xl border border-zinc-200/70 bg-white p-3 shadow-sm">
             <ResumePreview content={content} template={template} />
           </div>
         </div>
       </section>
-    </main>
+      </main>
+    </FadeIn>
   );
 };
 
