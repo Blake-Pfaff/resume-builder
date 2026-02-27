@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [signupNotice, setSignupNotice] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+  const authRedirectUrl = typeof window === "undefined" ? "/dashboard" : `${window.location.origin}/dashboard`;
 
   const getAuthValues = () => {
     const form = formRef.current;
@@ -59,8 +60,8 @@ export default function LoginPage() {
       return;
     }
 
-    if (passwordValue.length < 8) {
-      toast.error("Password must be at least 8 characters.");
+    if (passwordValue.length < 3) {
+      toast.error("Password must be at least 3 characters.");
       return;
     }
 
@@ -71,7 +72,7 @@ export default function LoginPage() {
         email: emailValue,
         password: passwordValue,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: authRedirectUrl,
         },
       });
       if (error) throw error;
@@ -111,7 +112,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email: emailValue,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: authRedirectUrl,
         },
       });
       if (error) throw error;
@@ -189,6 +190,9 @@ export default function LoginPage() {
                 {mode === "login" ? "Sign up" : "Log in"}
               </button>
             </div>
+            <p className="text-xs text-zinc-500">
+              Auth redirect URL: <span className="font-mono">{authRedirectUrl}</span>
+            </p>
           </form>
         </CardContent>
       </Card>
