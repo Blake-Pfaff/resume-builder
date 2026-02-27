@@ -13,6 +13,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [signupNotice, setSignupNotice] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
 
@@ -27,6 +29,7 @@ export default function LoginPage() {
   };
 
   const onPasswordLogin = async () => {
+    setSignupNotice(null);
     const { emailValue, passwordValue } = getAuthValues();
 
     if (!emailValue || !passwordValue) {
@@ -48,7 +51,54 @@ export default function LoginPage() {
     }
   };
 
+  const onSignup = async () => {
+    setSignupNotice(null);
+    const { emailValue, passwordValue } = getAuthValues();
+    if (!emailValue || !passwordValue) {
+      toast.error("Enter both email and password.");
+      return;
+    }
+
+    if (passwordValue.length < 8) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signUp({
+        email: emailValue,
+        password: passwordValue,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      if (error) throw error;
+
+      if (data.session) {
+        toast.success("Account created.");
+        router.push("/dashboard");
+        router.refresh();
+        return;
+      }
+
+      setSignupNotice("Account created. Check your email for a confirmation link before signing in.");
+      toast.success("Account created. Check your email to confirm your account.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Signup failed";
+      if (/already registered/i.test(message)) {
+        toast.error("That email is already registered. Try logging in instead.");
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const onMagicLink = async () => {
+    setSignupNotice(null);
     const { emailValue } = getAuthValues();
     if (!emailValue) {
       toast.error("Enter an email address.");
@@ -78,7 +128,11 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Resume Generator</CardTitle>
-          <CardDescription>Sign in with email/password or use a magic link.</CardDescription>
+          <CardDescription>
+            {mode === "login"
+              ? "Sign in with email/password or use a magic link."
+              : "Create an account with email/password, or use a magic link."}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -86,6 +140,10 @@ export default function LoginPage() {
             className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
+              if (mode === "signup") {
+                void onSignup();
+                return;
+              }
               void onPasswordLogin();
             }}
           >
@@ -107,11 +165,29 @@ export default function LoginPage() {
             />
             <div className="flex gap-2">
               <Button type="submit" disabled={loading}>
-              Login
+                {mode === "login" ? "Login" : "Create Account"}
               </Button>
               <Button type="button" variant="outline" disabled={loading} onClick={() => void onMagicLink()}>
-              Send Magic Link
+                Send Magic Link
               </Button>
+            </div>
+            {signupNotice ? (
+              <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                {signupNotice}
+              </p>
+            ) : null}
+            <div className="text-sm text-zinc-600">
+              {mode === "login" ? "Need an account?" : "Already have an account?"}{" "}
+              <button
+                type="button"
+                className="font-medium text-zinc-900 underline-offset-4 hover:underline"
+                onClick={() => {
+                  setSignupNotice(null);
+                  setMode((prev) => (prev === "login" ? "signup" : "login"));
+                }}
+              >
+                {mode === "login" ? "Sign up" : "Log in"}
+              </button>
             </div>
           </form>
         </CardContent>
