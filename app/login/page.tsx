@@ -190,9 +190,6 @@ export default function LoginPage() {
                 {mode === "login" ? "Sign up" : "Log in"}
               </button>
             </div>
-            <p className="text-xs text-zinc-500">
-              Auth redirect URL: <span className="font-mono">{authRedirectUrl}</span>
-            </p>
           </form>
         </CardContent>
       </Card>
